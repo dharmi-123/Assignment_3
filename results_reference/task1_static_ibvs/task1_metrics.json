@@ -1,0 +1,18 @@
+{
+  "status": "completed",
+  "steps": 100,
+  "initial_error_px": 1562.7075527817246,
+  "final_error_px": 3.0000433455945887,
+  "time_to_10px_s": 6.300000000000001,
+  "initial_feature": [
+    156.47103448275863,
+    -122.76689655172414,
+    1450.0
+  ],
+  "final_feature": [
+    0.014681348014676132,
+    0.006673340006670969,
+    2997.0
+  ],
+  "headline": "error 1563 px -> 3.0 px in 10 s (completed)"
+}

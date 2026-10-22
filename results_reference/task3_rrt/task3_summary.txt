@@ -1,0 +1,19 @@
+Task 3: Image-Space RRT
+=======================
+classic ibvs status         : collision
+classic ibvs steps          : 3
+rrt nodes                   : 952
+rrt iterations              : 2092
+path cost                   : 6293
+planning time s             : 2.696
+waypoints                   : 433
+execution status            : trajectory_complete
+control steps               : 433
+motion time s               : 43.3
+initial error px            : 1152
+final error px              : 72.81
+mean tracking error px      : 21.77
+min clearance cm            : 2.975
+collisions                  : 0
+min image clearance px      : None
+headline                    : classic IBVS: collision; RRT: 0 collisions, final error 73 px, min clearance 3.0 cm

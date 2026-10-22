@@ -1,0 +1,13 @@
+{
+  "status_classic": "completed",
+  "status_compensated": "completed",
+  "steady_error_classic_px": 62.182968951236376,
+  "steady_error_compensated_px": 9.707246357778583,
+  "max_steady_error_classic_px": 81.2023450059406,
+  "max_steady_error_compensated_px": 12.407204558466455,
+  "target_circle": {
+    "radius": 0.05,
+    "period": 8.0
+  },
+  "headline": "steady tracking error 62 px (classic) -> 9.7 px (compensated)"
+}

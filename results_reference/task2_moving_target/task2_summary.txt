@@ -1,0 +1,10 @@
+Task 2: IBVS - Moving Target
+============================
+status classic              : completed
+status compensated          : completed
+steady error classic px     : 62.18
+steady error compensated px : 9.707
+max steady error classic px : 81.2
+max steady error compensated px: 12.41
+target circle               : {'radius': 0.05, 'period': 8.0}
+headline                    : steady tracking error 62 px (classic) -> 9.7 px (compensated)
