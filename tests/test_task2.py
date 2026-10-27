@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 import pybullet as p
 
-from config import GOAL_FEATURE
+from tests.fakes import TEST_GOAL
 from ibvs import IBVSServo, compensated_camera_velocity, estimate_target_motion
 # A fixed interaction matrix, so TODOs 2-4 can be tested without TODO 1
 L_FIXED = np.array([[-1000.0, 0, 200, -10, -520, -50],
@@ -54,7 +54,7 @@ class TestTodo4CompensatedLaw(unittest.TestCase):
             errors = {}
             for comp in (False, True):
                 env.set_target_position(motion(0.0))
-                res = IBVSServo(env, kin, GOAL_FEATURE, compensate=comp).run(160, target_motion=motion)
+                res = IBVSServo(env, kin, TEST_GOAL, compensate=comp).run(160, target_motion=motion)
                 self.assertEqual(res["status"], "completed")
                 errors[comp] = np.mean(res["xy_errors"][80:])
             self.assertLess(errors[True], errors[False] / 3)

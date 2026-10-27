@@ -19,7 +19,6 @@ from matplotlib.patches import Polygon
 from config import (
     CX, CY, FOV_X_MAX, FOV_X_MIN, FOV_Y_MAX, FOV_Y_MIN,
     IMAGE_WIDTH, IMAGE_HEIGHT,
-    GOAL_FEATURE,
 )
 
 
@@ -61,9 +60,10 @@ def setup_pybullet_gui(env, title="Visual Servoing"):
 class LiveCameraVisualizer:
     """Manages real-time OpenCV camera preview with HUD and PyBullet 3D path."""
 
-    def __init__(self, env, title, is_gui=True, extra_status=""):
+    def __init__(self, env, title, goal=None, is_gui=True, extra_status=""):
         self.env = env
         self.title = title
+        self.goal = None if goal is None else np.asarray(goal, dtype=np.float64)   # s*
         self.is_gui = is_gui and (env.render_mode == p.GUI)
         self.extra_status = extra_status
         self.window_name = f"Eye-in-Hand Camera (Robot View) - {title}"
@@ -81,7 +81,7 @@ class LiveCameraVisualizer:
                 print(f"[Visualizer] OpenCV window init note: {e}")
                 self.is_gui = False
 
-    def draw_hud(self, rgb, mask, cur_feat, des_feat, goal, step_info):
+    def draw_hud(self, rgb, mask, cur_feat, step_info):
         """Render target outline, reticles, error arrow, telemetry, and area meter."""
         if rgb is None:
             return None
@@ -96,16 +96,19 @@ class LiveCameraVisualizer:
                 bx, by, bw, bh = cv2.boundingRect(contours[0])
                 cv2.rectangle(bgr, (bx, by), (bx + bw, by + bh), (0, 200, 100), 1)
 
-        # 2. Desired Target Reticle at Image Center (ud=320, vd=240)
-        ud, vd = int(CX), int(CY)
-        cv2.circle(bgr, (ud, vd), 16, (255, 215, 0), 2)  # Gold circle
-        cv2.circle(bgr, (ud, vd), 3, (255, 215, 0), -1)
-        cv2.line(bgr, (ud - 22, vd), (ud - 7, vd), (255, 215, 0), 1)
-        cv2.line(bgr, (ud + 7, vd), (ud + 22, vd), (255, 215, 0), 1)
-        cv2.line(bgr, (ud, vd - 22), (ud, vd - 7), (255, 215, 0), 1)
-        cv2.line(bgr, (ud, vd + 7), (ud, vd + 22), (255, 215, 0), 1)
-        cv2.putText(bgr, "s* Goal [0, 0]", (ud + 18, vd - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 215, 0), 1)
+        # 2. Reticle at the desired centroid (x*, y*) of s*
+        goal = self.goal
+        if goal is not None:
+            ud = int(np.clip(round(goal[0] + CX), 0, w - 1))
+            vd = int(np.clip(round(goal[1] + CY), 0, h - 1))
+            cv2.circle(bgr, (ud, vd), 16, (255, 215, 0), 2)  # Gold circle
+            cv2.circle(bgr, (ud, vd), 3, (255, 215, 0), -1)
+            cv2.line(bgr, (ud - 22, vd), (ud - 7, vd), (255, 215, 0), 1)
+            cv2.line(bgr, (ud + 7, vd), (ud + 22, vd), (255, 215, 0), 1)
+            cv2.line(bgr, (ud, vd - 22), (ud, vd - 7), (255, 215, 0), 1)
+            cv2.line(bgr, (ud, vd + 7), (ud, vd + 22), (255, 215, 0), 1)
+            cv2.putText(bgr, f"s* [{goal[0]:.0f}, {goal[1]:.0f}]", (ud + 18, vd - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 215, 0), 1)
 
         # 3. Current Target Centroid & Error Arrow
         if cur_feat is not None and np.all(np.isfinite(cur_feat)):
@@ -120,8 +123,8 @@ class LiveCameraVisualizer:
             cv2.line(bgr, (u - 15, v), (u + 15, v), (0, 255, 0), 1)
             cv2.line(bgr, (u, v - 15), (u, v + 15), (0, 255, 0), 1)
 
-            # Error vector (current centroid -> desired image center)
-            dist_2d = float(np.hypot(ud - u, vd - v))
+            # Error vector (current centroid -> desired centroid)
+            dist_2d = float(np.hypot(ud - u, vd - v)) if goal is not None else 0.0
             if dist_2d > 6:
                 tip = max(0.12, min(0.35, 12.0 / dist_2d))
                 cv2.arrowedLine(bgr, (u, v), (ud, vd), (0, 0, 255), 2, tipLength=tip)
@@ -160,7 +163,11 @@ class LiveCameraVisualizer:
         spd_norm = float(np.linalg.norm(q_vel))
 
         line1 = f"Current  s = [xc: {xc:+6.1f} px, yc: {yc:+6.1f} px, area: {int(area):4d} px]"
-        line2 = f"Desired s* = [xc:   +0.0 px, yc:   +0.0 px, area: 3000 px] | Depth: {step_info.get('depth', 0.5):.3f} m"
+        if goal is not None:
+            line2 = (f"Desired s* = [xc: {goal[0]:+6.1f} px, yc: {goal[1]:+6.1f} px, area: {int(goal[2]):4d} px]"
+                     f" | Depth: {step_info.get('depth', 0.5):.3f} m")
+        else:
+            line2 = "Desired s* not chosen yet: TODO 0 in config/experiment_config.py"
         line3 = f"Error ||s - s*||: {goal_err:6.1f} px | Wp Err: {trk_err:5.1f} px | Speed: {spd_norm:.4f} rad/s"
 
         cv2.putText(bgr, line1, (14, h - 62), cv2.FONT_HERSHEY_SIMPLEX, 0.44, (200, 255, 200), 1)
@@ -172,7 +179,7 @@ class LiveCameraVisualizer:
         gauge_y0, gauge_y1 = 80, h - 95
         gauge_h = gauge_y1 - gauge_y0
         cv2.rectangle(bgr, (gauge_x, gauge_y0), (gauge_x + 16, gauge_y1), (60, 60, 60), -1)
-        fill_ratio = max(0.0, min(1.0, float(area) / 3000.0))
+        fill_ratio = max(0.0, min(1.0, float(area) / (goal[2] if goal is not None else 3000.0)))
         fill_h = int(fill_ratio * gauge_h)
         bar_color = (0, 255, 0) if fill_ratio >= 0.9 else (0, 200, 255)
         cv2.rectangle(bgr, (gauge_x + 2, gauge_y1 - fill_h), (gauge_x + 14, gauge_y1 - 2), bar_color, -1)
@@ -187,8 +194,6 @@ class LiveCameraVisualizer:
         rgb = step_info.get("rgb")
         mask = step_info.get("mask")
         cur_feat = step_info.get("current_feature")
-        des_feat = step_info.get("target_waypoint")
-        goal = step_info.get("final_goal", GOAL_FEATURE)
 
         # 1. Update PyBullet 3D GUI trajectory lines
         if self.env.render_mode == p.GUI:
@@ -206,7 +211,7 @@ class LiveCameraVisualizer:
             self.prev_ee_pos = cur_ee_pos
 
         # 2. Render HUD frame in OpenCV
-        frame = self.draw_hud(rgb, mask, cur_feat, des_feat, goal, step_info)
+        frame = self.draw_hud(rgb, mask, cur_feat, step_info)
         self.last_frame = frame
 
         if self.is_gui and frame is not None:

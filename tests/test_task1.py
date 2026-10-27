@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 import pybullet as p
 
-from config import GOAL_FEATURE
+from tests.fakes import TEST_GOAL
 from ibvs import IBVSServo, ibvs_camera_velocity
 from kinematics import InteractionMatrix
 
@@ -64,7 +64,7 @@ class TestTodo2IBVSLaw(unittest.TestCase):
         env = PyBulletUR5Env(p.DIRECT)
         try:
             kin = UR5Kinematics(env.robot_id, env.ee_link_index)
-            res = IBVSServo(env, kin, GOAL_FEATURE).run(100)
+            res = IBVSServo(env, kin, TEST_GOAL).run(100)
             self.assertEqual(res["status"], "completed")
             self.assertLess(res["errors"][-1], 10.0)
         finally:

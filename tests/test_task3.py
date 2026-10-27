@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pybullet as p
 
-from config import GOAL_FEATURE, OBSTACLE_ENVIRONMENTS, OBSTACLE_SCENE, Q0_DEFAULT, RRT_LAMBDA
+from config import OBSTACLE_ENVIRONMENTS, OBSTACLE_SCENE, Q0_DEFAULT, RRT_LAMBDA
 from kinematics import InteractionMatrix
 from planner import ImageBasedRRTPlanner, WorkspaceDatasetGenerator
-from tests.fakes import FakeEnv, FakeKinematics, tiny_dataset
+from tests.fakes import TEST_GOAL, FakeEnv, FakeKinematics, tiny_dataset
 from visualizer import draw_rrt_tree
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -71,8 +71,8 @@ class TestTask3EndToEnd(unittest.TestCase):
             kin = UR5Kinematics(env.robot_id, env.ee_link_index)
             ds = WorkspaceDatasetGenerator.load(DATA_DIR / "dataset_obstacles_2000.npz")
             planner = ImageBasedRRTPlanner(env, kin, ds, random_seed=cfg["rrt_seed"])
-            planned_s, planned_q, _, _ = planner.plan(cfg["q0"], GOAL_FEATURE)
-            self.assertLessEqual(np.linalg.norm(planned_s[-1] - GOAL_FEATURE), 75.0)
+            planned_s, planned_q, _, _ = planner.plan(cfg["q0"], TEST_GOAL)
+            self.assertLessEqual(np.linalg.norm(planned_s[-1] - TEST_GOAL), 75.0)
             for q in planned_q[::5]:
                 self.assertFalse(env.check_collision(q, obstacle_margin=0.0))
         finally:

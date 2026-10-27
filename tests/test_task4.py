@@ -9,9 +9,9 @@ from pathlib import Path
 import numpy as np
 import pybullet as p
 
-from config import GOAL_FEATURE, OBSTACLE_ENVIRONMENTS, OBSTACLE_SCENE
+from config import OBSTACLE_ENVIRONMENTS, OBSTACLE_SCENE
 from planner import ImageBasedRRTPlanner, WorkspaceDatasetGenerator, _ConfigNode, _FeatureNode
-from tests.fakes import FakeEnv, FakeKinematics, tiny_dataset
+from tests.fakes import TEST_GOAL, FakeEnv, FakeKinematics, tiny_dataset
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -94,7 +94,7 @@ class TestTask4EndToEnd(unittest.TestCase):
             costs = []
             for star in (False, True):
                 pl = ImageBasedRRTPlanner(env, kin, ds, random_seed=cfg["rrt_seed"])
-                _, planned_q, _, _ = (pl.plan_star if star else pl.plan)(cfg["q0"], GOAL_FEATURE)
+                _, planned_q, _, _ = (pl.plan_star if star else pl.plan)(cfg["q0"], TEST_GOAL)
                 costs.append(pl.last_plan_result["path_cost"])
                 for q in planned_q[::5]:
                     self.assertFalse(env.check_collision(q, obstacle_margin=0.0))

@@ -8,8 +8,30 @@ from config.robot_config import (
     TARGET_COLOR_RGB, TARGET_SIZE_METERS,
 )
 
-# Desired feature for every case: target centred in the image, area 3000 px
-GOAL_FEATURE = np.array([0.0, 0.0, 3000.0])
+# ---------------------------------------------------------------------------
+# TODO 0 (before Task 1): choose the desired image feature s* = [x*, y*, a*].
+#
+# s* says how the target should look in the camera image when servoing ends.
+# All four tasks use it.
+#   x*, y* : where the target's centroid should be, in pixels measured from the
+#            image centre (x to the right, y downwards).  The image is
+#            640 x 480 px, so -320 < x* < 320 and -240 < y* < 240.
+#   a*     : the target's area in the image, in pixels^2.  It sets how close the
+#            camera gets: the area grows like 1/Z^2 with the camera-target
+#            distance Z, so a larger a* brings the camera closer.
+# Recommended ranges (below): every s* in them is reachable in all four tasks.
+# Outside them the target may leave the image or, in Tasks 3-4, the arm cannot
+# reach the pose without coming too close to the obstacle.
+# Tip: `python main.py --task1 --preview` prints the start feature s0 and draws
+# your s* in the camera image.
+#
+# Replace None with your choice:  GOAL_FEATURE = np.array([x*, y*, a*])
+# ---------------------------------------------------------------------------
+GOAL_FEATURE = None
+GOAL_X_RANGE = (0, 100)             # recommended range of x* (px)
+GOAL_Y_RANGE = (0, 80)              # recommended range of y* (px)
+GOAL_AREA_RANGE = (2000, 3000)      # recommended range of a* (px^2)
+
 # Feature seen by the workbench camera at Q0_DEFAULT (Tasks 1-2)
 WORKBENCH_S0 = np.array([156.64, -122.903, 1450.23])
 
@@ -52,7 +74,7 @@ OBSTACLE_SCENE = {
     "target_size": (0.03, 0.03, 0.03),
     "target_rgba": (0.05, 0.15, 0.95, 1.0),
     "target_hsv": ((100, 120, 60), (130, 255, 255)),  # blue
-    # workspace images are taken around the goal posture (s = GOAL_FEATURE)
+    # workspace images are taken around this posture (cube centred, ~3000 px^2)
     "dataset_q_center": np.array([-0.302, -1.480, 1.973, -0.129, 1.288, -0.106]),
     "dataset_joint_std": (0.30, 0.20, 0.25, 0.25, 0.20, 0.25),
 }

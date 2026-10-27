@@ -10,12 +10,12 @@ import cv2
 import numpy as np
 import pybullet as p
 
-from config import (GOAL_FEATURE, OBSTACLE_ENVIRONMENTS, OBSTACLE_IMAGE_MARGIN_PX,
+from config import (OBSTACLE_ENVIRONMENTS, OBSTACLE_IMAGE_MARGIN_PX,
                     OBSTACLE_SCENE, Q0_DEFAULT, RRT_GOAL_BIAS_K, WORKBENCH_S0)
 from kinematics import (TaskPrioritySolver, damped_pinv,
                         secondary_task_jacobian)
 from planner import ImageBasedRRTPlanner, WorkspaceDatasetGenerator
-from tests.fakes import FakeEnv, FakeKinematics, tiny_dataset
+from tests.fakes import TEST_GOAL, FakeEnv, FakeKinematics, tiny_dataset
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -54,9 +54,9 @@ class TestSamplingAndNearest(unittest.TestCase):
         ds = tiny_dataset([1, 2, 300], [4, 5, 600], [7, 8, 900])
         planner = ImageBasedRRTPlanner(FakeEnv(), FakeKinematics(), ds, random_seed=0)
         for count in range(1, 3 * RRT_GOAL_BIAS_K + 1):
-            s = planner._sample(count, GOAL_FEATURE)
+            s = planner._sample(count, TEST_GOAL)
             if count % RRT_GOAL_BIAS_K == 0:
-                np.testing.assert_allclose(s, GOAL_FEATURE)
+                np.testing.assert_allclose(s, TEST_GOAL)
             else:
                 self.assertTrue(any(np.allclose(s, row) for row in ds["s_workspace"]))
 
@@ -106,7 +106,7 @@ class TestDataset(unittest.TestCase):
 class TestPlannerLoop(unittest.TestCase):
     def test_start_inside_goal_radius_needs_no_extension(self):
         planner = ImageBasedRRTPlanner(FakeEnv(), FakeKinematics(), tiny_dataset([0, 0, 2950]))
-        f, _, _, _ = planner.plan(Q0_DEFAULT, GOAL_FEATURE, radius=60)
+        f, _, _, _ = planner.plan(Q0_DEFAULT, TEST_GOAL, radius=60)
         self.assertTrue(planner.last_plan_result["success"])
         self.assertEqual(f.shape, (1, 3))
 
@@ -137,10 +137,36 @@ class TestScenes(unittest.TestCase):
     def test_obstacle_goal_posture_sees_the_goal_feature(self):
         env = obstacle_env("a", q0=OBSTACLE_SCENE["dataset_q_center"], with_walls=False)
         try:
-            np.testing.assert_allclose(env.get_current_feature()[0], GOAL_FEATURE, atol=150)
+            np.testing.assert_allclose(env.get_current_feature()[0], TEST_GOAL, atol=150)
             self.assertFalse(env.check_collision())
         finally:
             env.close()
+
+
+class TestDesiredFeatureCheck(unittest.TestCase):
+    """main.desired_feature() reads and checks your s* (TODO 0)."""
+
+    def _with_goal(self, value):
+        import config
+        import main
+        saved = config.GOAL_FEATURE
+        config.GOAL_FEATURE = value
+        try:
+            return main.desired_feature()
+        finally:
+            config.GOAL_FEATURE = saved
+
+    def test_not_chosen_yet(self):
+        with self.assertRaises(NotImplementedError):
+            self._with_goal(None)
+
+    def test_outside_the_image_is_rejected(self):
+        for bad in ([400.0, 0.0, 3000.0], [0.0, -250.0, 3000.0], [0.0, 0.0, -5.0], [1.0, 2.0]):
+            with self.assertRaises(ValueError):
+                self._with_goal(np.array(bad))
+
+    def test_valid_choice_is_returned(self):
+        np.testing.assert_allclose(self._with_goal([20, 10, 2500]), [20.0, 10.0, 2500.0])
 
 
 if __name__ == "__main__":

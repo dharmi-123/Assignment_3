@@ -1,21 +1,43 @@
 # Assignment 3: Visual Servoing and Image-Space Path Planning with a UR5
 
 This assignment builds on the lectures on **Visual Servoing** and **RRT**. A camera is mounted on the
-end-effector of a UR5 robot. Your job is to bring a target to the image centre with a desired size,
-`s* = [0, 0, 3000]` (centroid x, y and area in pixels).
+end-effector of a UR5 robot. Your job is to make a target appear in the camera image exactly as you
+want it: at a chosen position and with a chosen size. This is described by the **desired feature vector**
+`s* = [x*, y*, a*]`: the target's centroid (x*, y*) in pixels from the image centre and its area a* in
+pixels². You choose s* yourself (TODO 0).
 
 You first build image-based visual servoing (IBVS) and make it track a moving target. Then you watch
 IBVS fail when an obstacle is in the way, and fix that by planning a path in image space with RRT and RRT*.
 
-The simulation, robot, camera, plots and GUI are provided. You implement **8 TODOs, two per task**.
+The simulation, robot, camera, plots and GUI are provided. You choose s* (TODO 0) and implement
+**8 TODOs, two per task**.
 
 ## Learning Objectives
 
+- Describe a visual-servoing goal with image features and choose a reachable one
 - Derive and use the interaction matrix of image features
 - Write a classic IBVS control law and see the error converge exponentially
 - Track a moving target by estimating and compensating its motion
 - Understand why IBVS alone fails near obstacles, and why planning helps
 - Grow an RRT in image space, and improve it into RRT* (choose parent, rewire)
+
+## Before you start: choose s* (TODO 0)
+
+**Where:** `config/experiment_config.py`, the line `GOAL_FEATURE = None` (marked `TODO 0`).
+
+**What:** replace `None` with your own values, `GOAL_FEATURE = np.array([x*, y*, a*])`:
+
+| | Meaning | Allowed | Recommended |
+|:---:|:---|:---:|:---:|
+| x* | horizontal position of the target's centroid, px from the image centre (right is +) | −320 … 320 | 0 … 100 |
+| y* | vertical position of the target's centroid, px from the image centre (down is +) | −240 … 240 | 0 … 80 |
+| a* | area of the target in the image, px²; larger = camera closer (area ∝ 1/distance²) | > 0 | 2000 … 3000 |
+
+All four tasks use the same s*. Every s* inside the recommended ranges is reachable in all tasks. Outside
+them the target may leave the image or, in Tasks 3–4, the arm cannot reach the pose without coming too
+close to the obstacle (the program warns you). To see where the target starts and where your s* is,
+run `python main.py --task1 --preview` (and `--task3`): it prints the start feature s0 and draws your
+s* in the camera image. Until you set s*, every task stops with a message pointing to TODO 0.
 
 ## Tasks
 
@@ -36,6 +58,7 @@ cheapest parent among its neighbours, and rewire neighbours through it when that
 
 | TODO | Task | File → function | Implement |
 |:---:|:---:|:---|:---|
+| 0 | all | `config/experiment_config.py` → `GOAL_FEATURE` | Your desired feature `s* = [x*, y*, a*]` |
 | 1 | 1 | `kinematics.py` → `InteractionMatrix.compute` | 3×6 interaction matrix of `s = [xc, yc, a]` |
 | 2 | 1 | `ibvs.py` → `ibvs_camera_velocity` | `v = −λ L⁺ e` |
 | 3 | 2 | `ibvs.py` → `estimate_target_motion` | `∂ê/∂t = (s_k − s_{k−1})/Δt − L_{k−1} v_{k−1}` |
@@ -46,7 +69,8 @@ cheapest parent among its neighbours, and rewire neighbours through it when that
 | 8 | 4 | `planner.py` → `_rewire` | Re-route neighbours through the new node |
 
 Each TODO block contains step-by-step hints. Replace its `raise NotImplementedError(...)` line with your code.
-Find them with `grep -n "TODO [1-8]" *.py`. Every task also needs the TODOs of the tasks before it.
+Find them with `grep -rn "TODO [0-8]" --include=*.py .`. Every task needs TODO 0 and the TODOs of
+the tasks before it.
 
 ## Setup
 
@@ -63,7 +87,7 @@ On Ubuntu, if `venv` fails, run `sudo apt install python3-venv` first.
 ## Running
 
 ```bash
-python main.py --task1 --preview   # look at a scene (works before any TODO)
+python main.py --task1 --preview   # look at a scene and your s* (works before any TODO)
 
 python -m unittest tests.test_task1 -v   # test your TODOs (likewise test_task2 ... test_task4)
 
@@ -80,7 +104,8 @@ Outputs are written to `results/<task>/`, with all tasks summarised in `results/
 
 ## Expected Results
 
-Reference outputs are in `results_reference/`.
+Reference outputs are in `results_reference/`. They were made with the target centred and an area of
+3000 px²; with your own s* the numbers change, but the behaviour should be the same.
 
 | Task | Expected |
 |:---|:---|

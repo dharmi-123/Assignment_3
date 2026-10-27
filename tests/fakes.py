@@ -4,6 +4,10 @@ import numpy as np
 
 from config import Q0_DEFAULT
 
+# Fixed desired feature used by the tests, independent of your own choice of
+# s* (TODO 0): target centred in the image with an area of 3000 px^2.
+TEST_GOAL = np.array([0.0, 0.0, 3000.0])
+
 
 class FakeKinematics:
     """Camera Jacobian = identity: joint rates equal the camera twist."""
